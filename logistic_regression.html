@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logistic Regression Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#1f2937;--muted:#6b7280;--pri:#4f46e5;--pri-d:#4338ca;--ok:#059669;--warn:#d97706;--bad:#dc2626;--line:#e5e7eb;--soft:#eef2ff}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Noto Sans Thai',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.65}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+header.hero{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;padding:26px 0 30px}
+header.hero .wrap{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+header.hero h1{margin:0 0 4px;font-size:1.7rem}
+header.hero p{margin:0;opacity:.9;font-weight:300}
+main{padding:20px 0 60px}
+.card{background:var(--card);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:20px 22px;margin-bottom:18px}
+.card h2{margin:0 0 14px;font-size:1.2rem;display:flex;align-items:center;gap:10px}
+.card h3{margin:22px 0 10px;font-size:1.05rem;color:var(--pri-d)}
+.num{display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--pri);color:#fff;align-items:center;justify-content:center;font-size:.9rem}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.btn{border:0;border-radius:10px;padding:10px 20px;font:inherit;font-weight:500;cursor:pointer;background:var(--pri);color:#fff;transition:.15s}
+.btn:hover{background:var(--pri-d)}
+.btn:disabled{background:#c7c9d9;cursor:not-allowed}
+.btn.sec{background:#fff;color:var(--pri);border:1.5px solid var(--pri)}
+.btn.sec:hover{background:var(--soft)}
+.btn.danger{background:#fff;color:var(--bad);border:1.5px solid var(--bad)}
+.btn.danger:hover{background:#fef2f2}
+.btn.small{padding:5px 12px;font-size:.82rem;border-radius:8px}
+.btn.big{padding:13px 34px;font-size:1.05rem}
+input[type=file]{padding:9px;border:2px dashed #c7d2fe;border-radius:10px;background:var(--soft);font:inherit;max-width:100%}
+select{font:inherit;padding:7px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;max-width:100%}
+.muted{color:var(--muted);font-size:.88rem}
+.tbl-wrap{overflow-x:auto;margin:8px 0}
+table.tbl{border-collapse:collapse;width:100%;font-size:.9rem}
+table.tbl th{background:#eef2ff;color:#312e81;padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:2px solid #c7d2fe}
+table.tbl th:first-child,table.tbl td.l{text-align:left}
+table.tbl td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+table.tbl tr:hover td{background:#fafaff}
+table.prev th{background:#f3f4f6;color:#374151}
+.explain{background:#f0fdf4;border-left:4px solid var(--ok);padding:12px 16px;border-radius:8px;margin:12px 0;font-size:.94rem}
+.explain ul{margin:6px 0 0 18px;padding:0}
+.explain li{margin:3px 0}
+.warnbox{background:#fffbeb;border-left:4px solid var(--warn);padding:10px 16px;border-radius:8px;margin:10px 0;font-size:.93rem}
+.badbox{background:#fef2f2;border-left:4px solid var(--bad);padding:10px 16px;border-radius:8px;margin:10px 0}
+.okbox{background:#ecfdf5;border-left:4px solid var(--ok);padding:10px 16px;border-radius:8px;margin:10px 0}
+.var-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}
+.var-row:hover{background:#fafaff}
+.vchk{min-width:200px;display:flex;align-items:center;gap:8px;cursor:pointer}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:linear-gradient(135deg,#eef2ff,#f5f3ff);border-radius:12px;padding:12px 14px}
+.tile .v{font-size:1.5rem;font-weight:700;color:var(--pri-d)}
+.tile .t{font-size:.8rem;color:var(--muted)}
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:18px}
+.chart-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff}
+.chart-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.chart-head h4{margin:0;font-size:.98rem}
+.chart-box{position:relative;height:370px}
+.chart-card canvas.cm{width:100%;height:auto}
+.chart-desc{font-size:.86rem;color:#4b5563;margin:8px 0 0;background:#f9fafb;padding:8px 10px;border-radius:8px}
+.sticky-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.slider-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}
+input[type=range]{width:260px}
+code.eq{display:block;background:#f3f4f6;padding:10px 14px;border-radius:8px;overflow-x:auto;font-size:.9rem;white-space:pre-wrap}
+.pill{display:inline-block;padding:1px 9px;border-radius:99px;font-size:.78rem;font-weight:600}
+.pill.g{background:#d1fae5;color:#065f46}.pill.r{background:#fee2e2;color:#991b1b}.pill.y{background:#fef3c7;color:#92400e}
+.hidden{display:none!important}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <h1>📊 โปรแกรมวิเคราะห์ Logistic Regression</h1>
+      <p>อัปโหลดไฟล์ Excel → เลือกตัวแปร → กดประมวลผล เพื่อดูค่าสถิติ คำอธิบายผล และกราฟทั้งหมด (ดาวน์โหลดเป็น PNG ได้)</p>
+    </div>
+    <button class="btn danger" id="resetTop" style="background:#fff">🔄 รีเซ็ตหน้าเว็บ</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- STEP 1 -->
+  <section class="card" id="step1">
+    <h2><span class="num">1</span> อัปโหลดไฟล์ข้อมูล</h2>
+    <div class="row">
+      <input type="file" id="file" accept=".xlsx,.xls,.xlsm,.csv">
+      <button class="btn sec" id="btnSample">🧪 ใช้ข้อมูลตัวอย่าง</button>
+      <button class="btn sec" id="btnSampleDl">⬇ ดาวน์โหลดไฟล์ Excel ตัวอย่าง</button>
+    </div>
+    <p class="muted" style="margin:10px 0 0">รูปแบบไฟล์: แถวแรกเป็นชื่อตัวแปร แถวถัดไปเป็นข้อมูล ตัวแปรตามต้องมี 2 ค่า (เช่น 0/1, Yes/No) ตัวแปรอิสระเป็นตัวเลขหรือหมวดหมู่ก็ได้ แถวที่มีค่าว่างในตัวแปรที่ใช้จะถูกตัดออกอัตโนมัติ</p>
+    <div id="sheetRow" class="row hidden" style="margin-top:12px"><b>เลือกชีต:</b> <select id="sheetSel"></select></div>
+    <div id="fileInfo" class="muted" style="margin-top:8px"></div>
+    <div id="preview"></div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="card hidden" id="step2">
+    <h2><span class="num">2</span> เลือกตัวแปร</h2>
+    <div class="row" style="margin-bottom:10px">
+      <b>ตัวแปรตาม (Y):</b> <select id="dvSel"></select>
+      <b>ค่าที่ถือเป็น "เกิดเหตุการณ์" (Y = 1):</b> <select id="eventSel"></select>
+    </div>
+    <div id="dvNote" class="muted"></div>
+    <h3 style="margin-top:16px">ตัวแปรอิสระ (X)</h3>
+    <div class="row" style="margin-bottom:6px">
+      <button class="btn sec small" id="selAll">เลือกทั้งหมด</button>
+      <button class="btn sec small" id="selNone">ไม่เลือกเลย</button>
+      <span class="muted">ถ้าเป็นหมวดหมู่ ระบบจะสร้างตัวแปรหุ่น (Dummy) โดยเทียบกับ "กลุ่มอ้างอิง" ที่เลือก</span>
+    </div>
+    <div id="varList"></div>
+
+    <div class="sticky-actions">
+      <button class="btn big" id="run">▶ ประมวลผล</button>
+      <button class="btn danger big" id="resetBtn">🔄 รีเซ็ต</button>
+    </div>
+    <div id="msg"></div>
+  </section>
+
+  <div id="results"></div>
+</main>
+
+<script>
+// =====================================================================
+// ===== MATH =====
+// =====================================================================
+function erfc(x){const z=Math.abs(x);const t=1/(1+0.5*z);
+  const r=t*Math.exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));
+  return x>=0?r:2-r;}
+const normCdf=x=>0.5*erfc(-x/Math.SQRT2);
+const pTwo=z=>erfc(Math.abs(z)/Math.SQRT2);
+function lgamma(x){const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+  let y=x,tmp=x+5.5;tmp-=(x+0.5)*Math.log(tmp);let ser=1.000000000190015;for(let j=0;j<6;j++){y+=1;ser+=c[j]/y;}
+  return -tmp+Math.log(2.5066282746310005*ser/x);}
+function gammq(a,x){
+  if(x<=0)return 1;
+  if(x<a+1){let ap=a,sum=1/a,del=sum;for(let n=0;n<1000;n++){ap++;del*=x/ap;sum+=del;if(Math.abs(del)<Math.abs(sum)*1e-15)break;}
+    return Math.max(0,1-sum*Math.exp(-x+a*Math.log(x)-lgamma(a)));}
+  let b=x+1-a,c=1e300,d=1/b,h=d;
+  for(let i=1;i<1000;i++){const an=-i*(i-a);b+=2;d=an*d+b;if(Math.abs(d)<1e-300)d=1e-300;c=b+an/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;const del=d*c;h*=del;if(Math.abs(del-1)<1e-15)break;}
+  return Math.exp(-x+a*Math.log(x)-lgamma(a))*h;}
+const chi2Sf=(x,df)=>(x<=0||df<=0)?1:gammq(df/2,x/2);
+const sig=e=>e>=0?1/(1+Math.exp(-e)):Math.exp(e)/(1+Math.exp(e));
+const zeros=k=>Array.from({length:k},()=>new Array(k).fill(0));
+function matMul(A,B){const n=A.length,m=B[0].length,q=B.length;const C=zeros(n);const R=Array.from({length:n},()=>new Array(m).fill(0));
+  for(let i=0;i<n;i++)for(let k=0;k<q;k++){const a=A[i][k];if(a===0)continue;for(let j=0;j<m;j++)R[i][j]+=a*B[k][j];}return R;}
+const transpose=A=>A[0].map((_,j)=>A.map(r=>r[j]));
+function invert(A){const n=A.length;const M=A.map((r,i)=>[...r,...Array.from({length:n},(_,j)=>i===j?1:0)]);
+  for(let i=0;i<n;i++){let p=i;for(let r=i+1;r<n;r++)if(Math.abs(M[r][i])>Math.abs(M[p][i]))p=r;
+    if(Math.abs(M[p][i])<1e-13)return null;[M[i],M[p]]=[M[p],M[i]];const pv=M[i][i];
+    for(let j=0;j<2*n;j++)M[i][j]/=pv;
+    for(let r=0;r<n;r++){if(r!==i){const f=M[r][i];if(f!==0)for(let j=0;j<2*n;j++)M[r][j]-=f*M[i][j];}}}
+  return M.map(r=>r.slice(n));}
+
+// Newton-Raphson / IRLS on (already standardized) design matrix
+function fitCore(Z,y){
+  const n=Z.length,k=Z[0].length;let b=new Array(k).fill(0);
+  const llf=b=>{let s=0;for(let i=0;i<n;i++){const z=Z[i];let e=0;for(let j=0;j<k;j++)e+=z[j]*b[j];
+    s+=y[i]*e-(e>0?e+Math.log1p(Math.exp(-e)):Math.log1p(Math.exp(e)));}return s;};
+  let ll=llf(b),converged=false,iter=0;
+  const hess=(b)=>{const g=new Array(k).fill(0);const H=zeros(k);const p=new Array(n),w=new Array(n);
+    for(let i=0;i<n;i++){const z=Z[i];let e=0;for(let j=0;j<k;j++)e+=z[j]*b[j];const pi=sig(e);const wi=Math.max(pi*(1-pi),1e-12);p[i]=pi;w[i]=wi;
+      const r=y[i]-pi;for(let j=0;j<k;j++){g[j]+=z[j]*r;const wz=wi*z[j];for(let l=0;l<=j;l++)H[j][l]+=wz*z[l];}}
+    for(let j=0;j<k;j++)for(let l=j+1;l<k;l++)H[j][l]=H[l][j];
+    return {g,H,p,w};};
+  for(iter=1;iter<=200;iter++){
+    const {g,H}=hess(b);
+    let Hi=invert(H);
+    if(!Hi){for(let j=0;j<k;j++)H[j][j]+=1e-6;Hi=invert(H);if(!Hi)return {error:'ไม่สามารถคำนวณได้ (เมทริกซ์เอกฐาน) — ตัวแปรอิสระอาจมีความสัมพันธ์กันสมบูรณ์ (perfect multicollinearity) กรุณาตรวจสอบตัวแปร'};}
+    const st=Hi.map(row=>row.reduce((a,v,j)=>a+v*g[j],0));
+    let t=1,nb=b,nll=ll;
+    for(let h=0;h<40;h++){nb=b.map((v,j)=>v+t*st[j]);nll=llf(nb);if(nll>=ll-1e-10)break;t/=2;}
+    const md=Math.max(...st.map(Math.abs))*t,dl=Math.abs(nll-ll);
+    b=nb;ll=nll;
+    if(md<1e-9||dl<1e-12){converged=true;break;}
+  }
+  iter=Math.min(iter,200);
+  const {H,p,w}=hess(b);
+  let cov=invert(H);if(!cov){for(let j=0;j<k;j++)H[j][j]+=1e-6;cov=invert(H);}
+  if(!cov)return {error:'ไม่สามารถคำนวณเมทริกซ์ความแปรปรวนร่วมได้'};
+  const h=new Array(n);
+  for(let i=0;i<n;i++){const z=Z[i];let q=0;for(let a=0;a<k;a++){let s=0;for(let c=0;c<k;c++)s+=cov[a][c]*z[c];q+=z[a]*s;}h[i]=w[i]*q;}
+  const maxZ=Math.max(...b.map(Math.abs));
+  const sep=!converged||maxZ>15||p.some(v=>v<1e-10||v>1-1e-10);
+  return {b,ll,iter,converged,p,w,h,cov,sep};
+}
+function fitLogit(X,y){
+  const n=X.length,k=X[0].length;const m=new Array(k).fill(0),s=new Array(k).fill(1);
+  for(let j=1;j<k;j++){let a=0;for(let i=0;i<n;i++)a+=X[i][j];m[j]=a/n;let v=0;for(let i=0;i<n;i++){const d=X[i][j]-m[j];v+=d*d;}s[j]=Math.sqrt(v/n)||1;}
+  const Z=X.map(r=>r.map((v,j)=>j===0?1:(v-m[j])/s[j]));
+  const r=fitCore(Z,y);if(r.error)return r;
+  const A=zeros(k);A[0][0]=1;for(let j=1;j<k;j++){A[0][j]=-m[j]/s[j];A[j][j]=1/s[j];}
+  const b=A.map(row=>row.reduce((a,v,j)=>a+v*r.b[j],0));
+  const cov=matMul(matMul(A,r.cov),transpose(A));
+  return {...r,b,cov,se:cov.map((row,i)=>Math.sqrt(Math.max(row[i],0)))};
+}
+function vifCalc(X){
+  const m=X[0].length-1;if(m<2)return null;const n=X.length;const mean=[],sd=[];
+  for(let j=1;j<=m;j++){let a=0;for(let i=0;i<n;i++)a+=X[i][j];a/=n;let v=0;for(let i=0;i<n;i++){const d=X[i][j]-a;v+=d*d;}mean.push(a);sd.push(Math.sqrt(v/(n-1))||1);}
+  const R=zeros(m);
+  for(let a=0;a<m;a++)for(let b=a;b<m;b++){let s=0;for(let i=0;i<n;i++)s+=(X[i][a+1]-mean[a])*(X[i][b+1]-mean[b]);R[a][b]=R[b][a]=s/(n-1)/(sd[a]*sd[b]);}
+  const Ri=invert(R);if(!Ri)return 'singular';return Ri.map((r,i)=>r[i]);}
+// ===== END MATH =====
+
+// =====================================================================
+// helpers
+// =====================================================================
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const isEmpty=v=>v===null||v===undefined||(typeof v==='string'&&v.trim()==='');
+function toNum(v){if(typeof v==='number')return isFinite(v)?v:NaN;if(typeof v==='boolean')return v?1:0;
+  if(typeof v==='string'){const s=v.replace(/,/g,'').trim();if(s==='')return NaN;const n=Number(s);return isFinite(n)?n:NaN;}return NaN;}
+const f=(x,d=4)=>(x===null||x===undefined||Number.isNaN(x))?'–':(x===Infinity?'∞':x===-Infinity?'-∞':Number(x).toFixed(d));
+const fp=p=>(p===null||p===undefined||Number.isNaN(p))?'–':(p<0.001?'<0.001':p.toFixed(3));
+const pTxt=p=>p<0.001?'< 0.001':'= '+p.toFixed(3);
+const stars=p=>p<0.001?'***':p<0.01?'**':p<0.05?'*':p<0.1?'†':'';
+const fo=v=>!isFinite(v)?'∞':(v>=1e5||(v>0&&v<1e-4))?v.toExponential(2):v.toFixed(3);
+const minmax=a=>{let mn=Infinity,mx=-Infinity;for(const v of a){if(v<mn)mn=v;if(v>mx)mx=v;}return [mn,mx];};
+const thin=(a,m=500)=>{if(a.length<=m)return a;const s=a.length/m;const o=[];for(let i=0;i<m;i++)o.push(a[Math.floor(i*s)]);o.push(a[a.length-1]);return o;};
+const C={pri:'#4f46e5',red:'#ef4444',green:'#10b981',amber:'#f59e0b',gray:'#9ca3af',blue:'#3b82f6',dark:'#111827'};
+
+let S={headers:[],rows:[],info:[],wb:null,charts:[],fileName:'',cm:null};
+
+function showMsg(t,type='bad'){$('msg').innerHTML=`<div class="${type==='bad'?'badbox':type==='ok'?'okbox':'warnbox'}">${t}</div>`;}
+
+// =====================================================================
+// load file
+// =====================================================================
+$('file').addEventListener('change',e=>{
+  const fl=e.target.files[0];if(!fl)return;
+  if(typeof XLSX==='undefined'){showMsg('ไม่สามารถโหลดไลบรารีอ่าน Excel ได้ (ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อโหลด SheetJS)');$('step2').classList.remove('hidden');return;}
+  S.fileName=fl.name;const rd=new FileReader();const isCsv=/\.csv$/i.test(fl.name);
+  rd.onload=ev=>{try{S.wb=isCsv?XLSX.read(ev.target.result,{type:'string'}):XLSX.read(ev.target.result,{type:'array'});setupSheets();}
+    catch(err){console.error(err);alert('อ่านไฟล์ไม่สำเร็จ: '+err.message);}};
+  isCsv?rd.readAsText(fl,'UTF-8'):rd.readAsArrayBuffer(fl);
+});
+function setupSheets(){
+  const names=S.wb.SheetNames;$('sheetSel').innerHTML=names.map(n=>`<option>${esc(n)}</option>`).join('');
+  $('sheetRow').classList.toggle('hidden',names.length<2);loadSheet(names[0]);}
+$('sheetSel').addEventListener('change',e=>loadSheet(e.target.value));
+function loadSheet(name){
+  const aoa=XLSX.utils.sheet_to_json(S.wb.Sheets[name],{header:1,defval:null,raw:true});
+  if(aoa.length<2){alert('ชีตนี้มีข้อมูลน้อยเกินไป (ต้องมีหัวตารางและข้อมูลอย่างน้อย 1 แถว)');return;}
+  const used=new Set();
+  const headers=aoa[0].map((h,i)=>{let s=isEmpty(h)?`Col${i+1}`:String(h).trim();let t=s,c=2;while(used.has(t))t=s+'_'+(c++);used.add(t);return t;});
+  const rows=aoa.slice(1).filter(r=>r.some(v=>!isEmpty(v))).map(r=>headers.map((_,i)=>r[i]===undefined?null:r[i]));
+  S.headers=headers;S.rows=rows;afterLoad();}
+function afterLoad(){
+  S.info=S.headers.map((h,i)=>{const u=new Set();let ne=0,nn=0;
+    S.rows.forEach(r=>{const v=r[i];if(!isEmpty(v)){ne++;u.add(String(v).trim());if(!isNaN(toNum(v)))nn++;}});
+    return {numeric:ne>0&&nn===ne,uniq:u,nonEmpty:ne};});
+  $('fileInfo').innerHTML=`📄 <b>${esc(S.fileName)}</b> — ${S.rows.length.toLocaleString()} แถว, ${S.headers.length} ตัวแปร`;
+  const pv=S.rows.slice(0,8);
+  $('preview').innerHTML=`<h3>ตัวอย่างข้อมูล (8 แถวแรก)</h3>`+tbl(S.headers.map(esc),pv.map(r=>r.map(v=>isEmpty(v)?'<span class="muted">(ว่าง)</span>':esc(v))),'prev');
+  $('step2').classList.remove('hidden');buildVarUI();$('msg').innerHTML='';$('results').innerHTML='';destroyCharts();}
+
+// ---------- sample data ----------
+function sampleAoa(){
+  let s=20240601;const rnd=()=>{s=(s*1664525+1013904223)%4294967296;return s/4294967296;};
+  const nrm=()=>{let u=0;for(let i=0;i<12;i++)u+=rnd();return u-6;};
+  const rows=[['Age','BMI','Exercise_hours','Smoker','Gender','Disease']];
+  for(let i=0;i<300;i++){
+    const age=Math.round(Math.min(80,Math.max(20,45+12*nrm())));
+    const bmi=+(Math.max(16,24.5+4*nrm())).toFixed(1);
+    const ex=+(Math.min(14,Math.max(0,3+2.5*nrm()))).toFixed(1);
+    const smk=rnd()<0.3?'Yes':'No';const g=rnd()<0.5?'Male':'Female';
+    const lg=-6+0.07*age+0.12*bmi-0.25*ex+1.1*(smk==='Yes'?1:0)+0.3*(g==='Male'?1:0);
+    const y=rnd()<1/(1+Math.exp(-lg))?1:0;rows.push([age,bmi,ex,smk,g,y]);}
+  return rows;}
+$('btnSample').onclick=()=>{const a=sampleAoa();S.fileName='ข้อมูลตัวอย่าง (สร้างอัตโนมัติ)';S.headers=a[0];S.rows=a.slice(1);$('sheetRow').classList.add('hidden');afterLoad();};
+$('btnSampleDl').onclick=()=>{if(typeof XLSX==='undefined'){alert('ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อโหลดไลบรารี SheetJS');return;}
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sampleAoa()),'Data');XLSX.writeFile(wb,'logistic_sample.xlsx');};
+
+// ---------- variable UI ----------
+const sortLv=a=>[...a].sort((x,y)=>String(x).localeCompare(String(y),undefined,{numeric:true}));
+function buildVarUI(){
+  const dv=$('dvSel');dv.innerHTML=S.headers.map((h,i)=>`<option value="${i}">${esc(h)}</option>`).join('');
+  let def=S.headers.length-1;for(let i=S.headers.length-1;i>=0;i--){if(S.info[i].uniq.size===2){def=i;break;}}
+  dv.value=def;onDvChange();}
+$('dvSel').addEventListener('change',onDvChange);
+function onDvChange(){
+  const dv=+$('dvSel').value;const lv=sortLv(S.info[dv].uniq);
+  $('eventSel').innerHTML=lv.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  $('eventSel').value=lv.includes('1')?'1':lv[lv.length-1];
+  $('dvNote').innerHTML=lv.length===2?`✅ ตัวแปรตามมี 2 ค่า: ${lv.map(esc).join(', ')}`:`<span style="color:#dc2626">⚠ ตัวแปรตามต้องมี 2 ค่าเท่านั้น แต่ "${esc(S.headers[dv])}" มี ${lv.length} ค่า กรุณาเลือกตัวแปรอื่น</span>`;
+  const box=$('varList');box.innerHTML='';
+  S.headers.forEach((h,i)=>{if(i===dv)return;const info=S.info[i];
+    const chk=!(!info.numeric&&info.uniq.size>20)&&!(info.uniq.size===S.rows.length&&S.rows.length>20)&&!/^(id|no\.?|ลำดับ|รหัส)$/i.test(h);
+    const d=document.createElement('div');d.className='var-row';d.dataset.col=i;
+    d.innerHTML=`<label class="vchk"><input type="checkbox" class="chk" ${chk?'checked':''}> <b>${esc(h)}</b></label>
+      <span class="muted">(${info.uniq.size} ค่าไม่ซ้ำ)</span>
+      <select class="typ"><option value="num">ตัวเลข (Continuous)</option><option value="cat">หมวดหมู่ (Dummy)</option></select>
+      <span class="refwrap hidden">กลุ่มอ้างอิง: <select class="ref"></select></span>`;
+    box.appendChild(d);
+    const typ=d.querySelector('.typ'),ref=d.querySelector('.ref'),rw=d.querySelector('.refwrap');
+    const upd=()=>{if(typ.value==='cat'){ref.innerHTML=sortLv(info.uniq).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');rw.classList.remove('hidden');}else rw.classList.add('hidden');};
+    if(!info.numeric){typ.value='cat';typ.querySelector('option[value=num]').disabled=true;}
+    typ.addEventListener('change',upd);upd();});
+}
+$('selAll').onclick=()=>document.querySelectorAll('.var-row .chk').forEach(c=>c.checked=true);
+$('selNone').onclick=()=>document.querySelectorAll('.var-row .chk').forEach(c=>c.checked=false);
+
+// =====================================================================
+// reset
+// =====================================================================
+function destroyCharts(){S.charts.forEach(c=>{try{c.destroy();}catch(e){}});S.charts=[];S.cm=null;}
+function resetAll(){
+  destroyCharts();S={headers:[],rows:[],info:[],wb:null,charts:[],fileName:'',cm:null};
+  $('file').value='';$('sheetSel').innerHTML='';$('sheetRow').classList.add('hidden');$('fileInfo').innerHTML='';$('preview').innerHTML='';
+  $('varList').innerHTML='';$('dvSel').innerHTML='';$('eventSel').innerHTML='';$('dvNote').innerHTML='';$('msg').innerHTML='';$('results').innerHTML='';
+  $('step2').classList.add('hidden');$('run').disabled=false;$('run').innerHTML='▶ ประมวลผล';window.scrollTo({top:0,behavior:'smooth'});}
+$('resetBtn').onclick=resetAll;$('resetTop').onclick=resetAll;
+
+// =====================================================================
+// build data
+// =====================================================================
+function readConfig(){
+  const dv=+$('dvSel').value;const eventVal=$('eventSel').value;
+  const vars=[...document.querySelectorAll('.var-row')].filter(r=>r.querySelector('.chk').checked).map(r=>({col:+r.dataset.col,name:S.headers[+r.dataset.col],type:r.querySelector('.typ').value,ref:r.querySelector('.ref').value}));
+  if(!vars.length)throw new Error('กรุณาเลือกตัวแปรอิสระอย่างน้อย 1 ตัว');
+  return {dv,eventVal,vars};}
+function buildData(cfg){
+  const dvName=S.headers[cfg.dv];const dvSet=new Set();
+  S.rows.forEach(r=>{const v=r[cfg.dv];if(!isEmpty(v))dvSet.add(String(v).trim());});
+  if(dvSet.size!==2)throw new Error(`ตัวแปรตาม "${esc(dvName)}" ต้องมี 2 ค่า (Binary) แต่พบ ${dvSet.size} ค่า กรุณาเลือกตัวแปรตามใหม่`);
+  const evStr=cfg.eventVal;if(!dvSet.has(evStr))throw new Error('ค่าเหตุการณ์ไม่ถูกต้อง');
+  const other=[...dvSet].find(v=>v!==evStr);
+  const keep=[];let miss=0;
+  S.rows.forEach(r=>{
+    if(isEmpty(r[cfg.dv])){miss++;return;}
+    const vals=[];let ok=true;
+    for(const v of cfg.vars){const x=r[v.col];if(isEmpty(x)){ok=false;break;}
+      if(v.type==='num'){const n=toNum(x);if(isNaN(n)){ok=false;break;}vals.push(n);}else vals.push(String(x).trim());}
+    if(!ok){miss++;return;}
+    keep.push({y:String(r[cfg.dv]).trim()===evStr?1:0,vals});});
+  if(keep.length<10)throw new Error('จำนวนข้อมูลที่ใช้ได้น้อยเกินไป (น้อยกว่า 10 แถว) หลังตัดค่าว่าง');
+  const cols=[{name:'(Intercept)',term:'(Intercept)',kind:'int'}];const terms=[];
+  cfg.vars.forEach((v,j)=>{
+    if(v.type==='num'){const [mn,mx]=minmax(keep.map(k=>k.vals[j]));
+      if(mn===mx)throw new Error(`ตัวแปร "${esc(v.name)}" มีค่าเท่ากันทุกแถว (ไม่มีความแปรปรวน) กรุณาเอาออก`);
+      terms.push({name:v.name,kind:'num',idx:[cols.length],min:mn,max:mx});cols.push({name:v.name,term:v.name,kind:'num'});}
+    else{const lv=sortLv(new Set(keep.map(k=>k.vals[j])));
+      if(lv.length<2)throw new Error(`ตัวแปรหมวดหมู่ "${esc(v.name)}" เหลือเพียง 1 ระดับหลังตัดค่าว่าง กรุณาเอาออก`);
+      if(lv.length>30)throw new Error(`ตัวแปร "${esc(v.name)}" มีระดับมากเกินไป (${lv.length}) กรุณาเปลี่ยนเป็นตัวเลข หรือไม่เลือกตัวแปรนี้`);
+      const ref=lv.includes(v.ref)?v.ref:lv[0];const idx=[];
+      lv.filter(l=>l!==ref).forEach(l=>{idx.push(cols.length);cols.push({name:`${v.name} [${l} vs ${ref}]`,term:v.name,kind:'dummy',level:l,ref});});
+      terms.push({name:v.name,kind:'cat',idx,levels:lv,ref});}});
+  const X=keep.map(k=>{const row=[1];cfg.vars.forEach((v,j)=>{if(v.type==='num')row.push(k.vals[j]);else terms[j].idx.forEach(ci=>row.push(k.vals[j]===cols[ci].level?1:0));});return row;});
+  const y=keep.map(k=>k.y);
+  const means=cols.map((_,j)=>X.reduce((a,r)=>a+r[j],0)/X.length);
+  return {X,y,cols,terms,dvName,evStr,other,total:S.rows.length,miss,means};}
+
+// =====================================================================
+// compute statistics
+// =====================================================================
+function confusion(p,y,t){let tp=0,fp=0,tn=0,fn=0;for(let i=0;i<p.length;i++){const pr=p[i]>=t?1:0;if(y[i]===1){pr?tp++:fn++;}else{pr?fp++:tn++;}}return {tp,fp,tn,fn};}
+function clsMetrics(c){const n=c.tp+c.fp+c.tn+c.fn;const sens=c.tp/(c.tp+c.fn),spec=c.tn/(c.tn+c.fp),ppv=c.tp/(c.tp+c.fp),npv=c.tn/(c.tn+c.fn);
+  return {n,acc:(c.tp+c.tn)/n,sens,spec,ppv,npv,f1:2*ppv*sens/(ppv+sens),bal:(sens+spec)/2,
+    mcc:(c.tp*c.tn-c.fp*c.fn)/Math.sqrt((c.tp+c.fp)*(c.tp+c.fn)*(c.tn+c.fp)*(c.tn+c.fn)),
+    fpr:1-spec,fnr:1-sens};}
+
+function compute(D){
+  const {X,y,cols,terms}=D;const n=y.length,k=cols.length;
+  const n1=y.reduce((a,b)=>a+b,0),n0=n-n1;
+  if(n1===0||n0===0)throw new Error('หลังตัดค่าว่างแล้ว ตัวแปรตามเหลือเพียงกลุ่มเดียว ไม่สามารถวิเคราะห์ได้');
+  if(n<=k)throw new Error('จำนวนข้อมูลน้อยกว่าหรือเท่ากับจำนวนพารามิเตอร์ ไม่สามารถวิเคราะห์ได้');
+  const fit=fitLogit(X,y);if(fit.error)throw new Error(fit.error);
+  const R={n,n1,n0,k,fit,p:fit.p};
+  R.ll0=n1*Math.log(n1/n)+n0*Math.log(n0/n);R.ll=fit.ll;
+  R.LR=Math.max(0,2*(fit.ll-R.ll0));R.dfm=k-1;R.pLR=chi2Sf(R.LR,R.dfm);
+  R.aic=-2*fit.ll+2*k;R.bic=-2*fit.ll+k*Math.log(n);
+  R.mcf=1-fit.ll/R.ll0;R.cs=1-Math.exp(2*(R.ll0-fit.ll)/n);R.nag=R.cs/(1-Math.exp(2*R.ll0/n));
+  R.brier=fit.p.reduce((a,p,i)=>a+(p-y[i])**2,0)/n;R.logloss=-fit.ll/n;
+  R.eta=X.map(r=>r.reduce((a,v,j)=>a+v*fit.b[j],0));
+  // coefficients
+  const zc=1.959964;
+  R.coefs=cols.map((c,j)=>{const b=fit.b[j],se=fit.se[j],z=b/se;return {name:c.name,kind:c.kind,level:c.level,ref:c.ref,term:c.term,b,se,z,wald:z*z,p:pTwo(z),or:Math.exp(b),lo:Math.exp(b-zc*se),hi:Math.exp(b+zc*se),bLo:b-zc*se,bHi:b+zc*se};});
+  // term-level LR
+  R.termTests=terms.map(t=>{const keep=cols.map((_,j)=>j).filter(j=>!t.idx.includes(j));let llr;
+    if(keep.length===1)llr=R.ll0;else{const fr=fitLogit(X.map(r=>keep.map(j=>r[j])),y);llr=fr.error?NaN:fr.ll;}
+    const lr=Math.max(0,2*(fit.ll-llr)),df=t.idx.length;return {name:t.name,kind:t.kind,df,lr,p:chi2Sf(lr,df)};});
+  R.vif=vifCalc(X);
+  // Hosmer-Lemeshow
+  const ord=[...Array(n).keys()].sort((a,b)=>fit.p[a]-fit.p[b]);
+  const g=n>=30?10:Math.max(2,Math.floor(n/5));R.hlGroups=[];let chi=0;
+  for(let q=0;q<g;q++){const s=Math.floor(q*n/g),e=Math.floor((q+1)*n/g);let o=0,ex=0;for(let i=s;i<e;i++){o+=y[ord[i]];ex+=fit.p[ord[i]];}
+    const m=e-s;const term=(ex>0&&m-ex>0)?(o-ex)**2*m/(ex*(m-ex)):0;chi+=term;R.hlGroups.push({m,o,e:ex,meanP:ex/m,obsRate:o/m});}
+  R.hl={chi,df:g-2,p:g>2?chi2Sf(chi,g-2):NaN,g};
+  // ROC
+  const idx=[...Array(n).keys()].sort((a,b)=>fit.p[b]-fit.p[a]);
+  const roc=[{fpr:0,tpr:0,thr:Infinity,prec:1}];let tp=0,fpc=0;
+  for(let ii=0;ii<n;ii++){const i=idx[ii];if(y[i])tp++;else fpc++;
+    if(ii===n-1||fit.p[idx[ii+1]]!==fit.p[i])roc.push({fpr:fpc/n0,tpr:tp/n1,thr:fit.p[i],prec:tp/(tp+fpc)});}
+  R.roc=roc;let auc=0;for(let i=1;i<roc.length;i++)auc+=(roc[i].fpr-roc[i-1].fpr)*(roc[i].tpr+roc[i-1].tpr)/2;
+  R.auc=auc;const Q1=auc/(2-auc),Q2=2*auc*auc/(1+auc);
+  R.aucSE=Math.sqrt(Math.max(0,(auc*(1-auc)+(n1-1)*(Q1-auc*auc)+(n0-1)*(Q2-auc*auc))/(n1*n0)));
+  R.aucCI=[Math.max(0,auc-zc*R.aucSE),Math.min(1,auc+zc*R.aucSE)];R.aucZ=(auc-0.5)/R.aucSE;R.aucP=pTwo(R.aucZ);R.gini=2*auc-1;
+  let best=roc[1],bj=-1;roc.forEach((r,i)=>{if(i>0&&r.tpr-r.fpr>bj){bj=r.tpr-r.fpr;best=r;}});R.youden={...best,j:bj};R.ks=bj;
+  // PR
+  R.pr=[{rec:0,prec:1}].concat(roc.slice(1).map(r=>({rec:r.tpr,prec:r.prec})));
+  let ap=0;for(let i=1;i<R.pr.length;i++)ap+=(R.pr[i].rec-R.pr[i-1].rec)*R.pr[i].prec;R.ap=ap;
+  R.sortDesc=idx;
+  // residuals
+  R.pear=[],R.dev=[],R.stdP=[],R.stdD=[],R.cook=[];
+  for(let i=0;i<n;i++){const p=Math.min(Math.max(fit.p[i],1e-12),1-1e-12);const r=(y[i]-p)/Math.sqrt(p*(1-p));
+    const d=(y[i]===1?1:-1)*Math.sqrt(Math.max(0,-2*(y[i]*Math.log(p)+(1-y[i])*Math.log(1-p))));
+    const h=Math.min(fit.h[i],1-1e-10);R.pear.push(r);R.dev.push(d);R.stdP.push(r/Math.sqrt(1-h));R.stdD.push(d/Math.sqrt(1-h));R.cook.push(r*r*h/(k*(1-h)*(1-h)));}
+  R.nOut2=R.stdD.filter(v=>Math.abs(v)>2).length;R.nOut3=R.stdD.filter(v=>Math.abs(v)>3).length;
+  R.cookTh=4/n;R.nCook=R.cook.filter(v=>v>R.cookTh).length;R.nCook1=R.cook.filter(v=>v>1).length;
+  R.levTh=2*k/n;R.nLev=fit.h.filter(v=>v>R.levTh).length;R.maxCook=Math.max(...R.cook);R.maxCookIdx=R.cook.indexOf(R.maxCook);
+  R.epv=Math.min(n1,n0)/(k-1);
+  return R;}
+
+// =====================================================================
+// render helpers
+// =====================================================================
+function tbl(head,rows,cls=''){return `<div class="tbl-wrap"><table class="tbl ${cls}"><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td${i===0?' class="l"':''}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;}
+const aucLevel=a=>a>=0.9?'ดีเยี่ยม (Outstanding)':a>=0.8?'ดีมาก (Excellent)':a>=0.7?'ยอมรับได้ (Acceptable)':a>=0.6?'อ่อน (Poor)':'ใกล้เคียงการเดา (No discrimination)';
+const mcfLevel=a=>a>=0.4?'ดีเยี่ยม':a>=0.2?'ดีมาก':a>=0.1?'พอใช้':'ต่ำ';
+
+function interpretCoef(c,D){
+  const ev=`<i>${esc(D.dvName)} = ${esc(D.evStr)}</i>`;
+  const sigf=c.p<0.05;
+  const dir=c.or>1?'เพิ่มขึ้น':'ลดลง';const pct=f(Math.abs(c.or-1)*100,1);
+  let who;
+  if(c.kind==='num')who=`เมื่อ <b>${esc(c.name)}</b> เพิ่มขึ้น 1 หน่วย`;
+  else who=`กลุ่ม <b>${esc(c.term)} = ${esc(c.level)}</b> เมื่อเทียบกับกลุ่มอ้างอิง (${esc(c.ref)})`;
+  if(sigf)return `<li><span class="pill ${c.or>1?'r':'g'}">${c.or>1?'เพิ่มความเสี่ยง':'ลดลง'}</span> ${who} (เมื่อควบคุมตัวแปรอื่นคงที่) odds ของ ${ev} จะ<b>${dir} ${pct}%</b> (OR = ${fo(c.or)}, 95% CI [${fo(c.lo)}, ${fo(c.hi)}], p ${pTxt(c.p)})</li>`;
+  return `<li><span class="pill y">ไม่มีนัยสำคัญ</span> ${who}: OR = ${fo(c.or)} (95% CI [${fo(c.lo)}, ${fo(c.hi)}], p ${pTxt(c.p)}) — ยังไม่มีหลักฐานเพียงพอว่ามีความสัมพันธ์กับ ${ev} (ช่วงความเชื่อมั่นครอบคลุมค่า 1)</li>`;}
+
+function render(D,R){
+  const ev=`${esc(D.dvName)} = ${esc(D.evStr)}`;
+  let h='';
+  // warnings
+  const warns=[];
+  if(R.fit.sep)warns.push('⚠ <b>พบสัญญาณ Complete/Quasi-separation หรือไม่ลู่เข้า</b> — ค่าสัมประสิทธิ์และ SE อาจใหญ่ผิดปกติ ผลที่ได้อาจไม่น่าเชื่อถือ ควรลดจำนวนตัวแปร รวมระดับของตัวแปรหมวดหมู่ หรือเพิ่มข้อมูล');
+  if(R.epv<10)warns.push(`⚠ <b>Events per variable (EPV) = ${f(R.epv,1)} (< 10)</b> — ข้อมูลน้อยเมื่อเทียบกับจำนวนตัวแปร อาจเกิด overfitting และค่าประมาณไม่เสถียร`);
+  if(R.n<100)warns.push(`⚠ ขนาดตัวอย่างค่อนข้างน้อย (n = ${R.n})`);
+  warns.forEach(w=>h+=`<div class="warnbox">${w}</div>`);
+
+  // ----- tiles -----
+  h+=`<section class="card"><h2>🎯 สรุปผลภาพรวม</h2><div class="tiles">
+    <div class="tile"><div class="v">${R.n.toLocaleString()}</div><div class="t">จำนวนข้อมูลที่ใช้ (n)</div></div>
+    <div class="tile"><div class="v">${f(R.n1/R.n*100,1)}%</div><div class="t">สัดส่วน ${ev}</div></div>
+    <div class="tile"><div class="v">${fp(R.pLR)}</div><div class="t">p-value (Omnibus LR test)</div></div>
+    <div class="tile"><div class="v">${f(R.nag,3)}</div><div class="t">Nagelkerke R²</div></div>
+    <div class="tile"><div class="v">${f(R.auc,3)}</div><div class="t">AUC</div></div>
+    <div class="tile"><div class="v" id="tileAcc">–</div><div class="t">Accuracy (cutoff 0.5)</div></div>
+    <div class="tile"><div class="v">${R.hl.p!==R.hl.p?'–':fp(R.hl.p)}</div><div class="t">Hosmer-Lemeshow p</div></div>
+  </div><div id="overall"></div></section>`;
+
+  // ----- 1 data summary -----
+  h+=`<section class="card"><h2><span class="num">A</span> สรุปข้อมูลและการเข้ารหัสตัวแปร</h2>`;
+  h+=tbl(['รายการ','ค่า'],[
+    ['ไฟล์ / ชีต',esc(S.fileName)],
+    ['จำนวนแถวทั้งหมด',D.total.toLocaleString()],
+    ['ตัดทิ้งเนื่องจากมีค่าว่าง/ไม่ใช่ตัวเลข (Listwise deletion)',D.miss.toLocaleString()],
+    ['จำนวนข้อมูลที่ใช้วิเคราะห์ (n)',R.n.toLocaleString()],
+    [`Y = 1 (${ev})`,`${R.n1.toLocaleString()} (${f(R.n1/R.n*100,1)}%)`],
+    [`Y = 0 (${esc(D.dvName)} = ${esc(D.other)})`,`${R.n0.toLocaleString()} (${f(R.n0/R.n*100,1)}%)`],
+    ['จำนวนพารามิเตอร์ (รวม Intercept)',R.k],
+    ['Events per variable (EPV)',f(R.epv,1)],
+    ['การลู่เข้าของ Newton-Raphson',`${R.fit.converged?'ลู่เข้า':'ไม่ลู่เข้า'} (${R.fit.iter} รอบ)`]]);
+  h+=`<div class="explain"><b>📖 คำอธิบาย</b><br>โมเดลทำนายความน่าจะเป็นที่จะเกิด <b>${ev}</b> ตัวแปรหมวดหมู่ถูกแปลงเป็น Dummy variable โดยเทียบกับกลุ่มอ้างอิง ข้อมูลที่ขาดหายถูกตัดทั้งแถว หลักการทั่วไปคือควรมี EPV อย่างน้อย 10 เพื่อให้ผลประมาณเสถียร</div></section>`;
+
+  // ----- 2 model fit -----
+  h+=`<section class="card"><h2><span class="num">B</span> ความเหมาะสมของโมเดล (Model Fit)</h2>`;
+  h+=`<h3>การทดสอบโมเดลโดยรวม (Omnibus / Likelihood Ratio Test)</h3>`;
+  h+=tbl(['สถิติ','ค่า','df','p-value'],[
+    ['−2 Log-likelihood (Null model)',f(-2*R.ll0,3),'',''],
+    ['−2 Log-likelihood (Full model)',f(-2*R.ll,3),'',''],
+    ['Likelihood Ratio χ²',f(R.LR,3),R.dfm,fp(R.pLR)+' '+stars(R.pLR)]]);
+  h+=`<h3>ค่าสถิติวัดความเหมาะสมและความเที่ยงตรง</h3>`;
+  h+=tbl(['สถิติ','ค่า','หมายเหตุ'],[
+    ['AIC',f(R.aic,3),'ยิ่งต่ำยิ่งดี (ใช้เปรียบเทียบโมเดล)'],
+    ['BIC',f(R.bic,3),'ยิ่งต่ำยิ่งดี (ลงโทษจำนวนตัวแปรมากกว่า AIC)'],
+    ['McFadden R²',f(R.mcf,4),`ระดับ: ${mcfLevel(R.mcf)} (0.2–0.4 ถือว่าดีมาก)`],
+    ['Cox & Snell R²',f(R.cs,4),'ค่าสูงสุดน้อยกว่า 1'],
+    ['Nagelkerke R²',f(R.nag,4),'ปรับให้สูงสุดเป็น 1'],
+    ['Hosmer-Lemeshow χ²',R.hl.p!==R.hl.p?'–':f(R.hl.chi,3),`df = ${R.hl.df}, p = ${fp(R.hl.p)} (ต้องการ p > 0.05)`],
+    ['Brier score',f(R.brier,4),'ยิ่งต่ำยิ่งดี (0 = สมบูรณ์แบบ)'],
+    ['Log loss',f(R.logloss,4),'ค่าเฉลี่ยของ −log-likelihood ต่อหน่วย']]);
+  const fitTxt=[];
+  fitTxt.push(`<b>Omnibus test:</b> χ²(${R.dfm}) = ${f(R.LR,3)}, p ${pTxt(R.pLR)} — `+(R.pLR<0.05?'โมเดลที่ใส่ตัวแปรอิสระ<b>ดีกว่า</b>โมเดลที่ไม่มีตัวแปรอิสระอย่างมีนัยสำคัญทางสถิติ (α = 0.05) แสดงว่ามีตัวแปรอิสระอย่างน้อย 1 ตัวที่ช่วยทำนายผลลัพธ์ได้':'โมเดลยังไม่ดีกว่าโมเดลที่ไม่มีตัวแปรอิสระอย่างมีนัยสำคัญ (α = 0.05) ตัวแปรอิสระที่ใส่อาจไม่ช่วยทำนายผลลัพธ์'));
+  fitTxt.push(`<b>Pseudo R²:</b> Nagelkerke R² = ${f(R.nag,3)} หมายถึงโมเดลอธิบายความผันแปรของตัวแปรตามได้ประมาณ ${f(R.nag*100,1)}% และ McFadden R² = ${f(R.mcf,3)} (ระดับ${mcfLevel(R.mcf)}) ค่า Pseudo R² ของ Logistic regression มักต่ำกว่า R² ของ Linear regression จึงไม่ควรตีความด้วยเกณฑ์เดียวกัน`);
+  if(R.hl.p===R.hl.p)fitTxt.push(`<b>Hosmer-Lemeshow:</b> χ²(${R.hl.df}) = ${f(R.hl.chi,3)}, p ${pTxt(R.hl.p)} — `+(R.hl.p>0.05?'ไม่พบความแตกต่างอย่างมีนัยสำคัญระหว่างค่าที่สังเกตกับค่าที่โมเดลคาด แสดงว่าโมเดล<b>สอดคล้องกับข้อมูลดี (well-calibrated)</b>':'พบความแตกต่างอย่างมีนัยสำคัญระหว่างค่าที่สังเกตกับค่าที่คาด แสดงว่าโมเดล<b>ยังไม่สอดคล้องกับข้อมูลดีนัก</b> ควรพิจารณาเพิ่มตัวแปร พจน์ปฏิสัมพันธ์ หรือแปลงตัวแปร (หมายเหตุ: ถ้า n มาก การทดสอบนี้ไวต่อความแตกต่างเล็กน้อย)'));
+  fitTxt.push(`<b>AIC/BIC:</b> ใช้เปรียบเทียบหลายโมเดลบนข้อมูลชุดเดียวกัน โมเดลที่ค่าต่ำกว่าถือว่าสมดุลระหว่างความเหมาะสมและความซับซ้อนดีกว่า ส่วน <b>Brier score</b> = ${f(R.brier,3)} ใช้วัดความแม่นยำของความน่าจะเป็นที่ทำนาย`);
+  h+=`<div class="explain"><b>📖 คำอธิบายผล</b><ul>${fitTxt.map(t=>`<li>${t}</li>`).join('')}</ul></div></section>`;
+
+  // ----- 3 coefficients -----
+  h+=`<section class="card"><h2><span class="num">C</span> ค่าสัมประสิทธิ์และ Odds Ratio</h2>`;
+  h+=tbl(['ตัวแปร','B','S.E.','Wald χ²','z','p-value','','Exp(B) = OR','95% CI ของ OR (ต่ำ)','95% CI ของ OR (สูง)'],
+    R.coefs.map(c=>[esc(c.name),f(c.b,4),f(c.se,4),f(c.wald,3),f(c.z,3),fp(c.p),`<b style="color:#dc2626">${stars(c.p)}</b>`,fo(c.or),fo(c.lo),fo(c.hi)]));
+  h+=`<p class="muted">* p&lt;0.05, ** p&lt;0.01, *** p&lt;0.001, † p&lt;0.1 (Wald test)</p>`;
+  const eq='logit(P) = ln[P/(1−P)] = '+R.coefs.map((c,i)=>i===0?f(c.b,4):`${c.b<0?'−':'+'} ${f(Math.abs(c.b),4)}·[${c.name}]`).join(' ');
+  h+=`<h3>สมการพยากรณ์</h3><code class="eq">${esc(eq)}\nP(${D.dvName} = ${D.evStr}) = 1 / (1 + e^(−logit))</code>`;
+  h+=`<h3>การทดสอบรายตัวแปร (Likelihood Ratio Test ต่อ 1 ตัวแปร)</h3>`;
+  h+=tbl(['ตัวแปร','ชนิด','df','LR χ²','p-value',''],R.termTests.map(t=>[esc(t.name),t.kind==='num'?'ตัวเลข':'หมวดหมู่',t.df,f(t.lr,3),fp(t.p),`<b style="color:#dc2626">${stars(t.p)}</b>`]));
+  const items=R.coefs.slice(1).map(c=>interpretCoef(c,D)).join('');
+  h+=`<div class="explain"><b>📖 คำอธิบายผล</b>
+    <ul>
+    <li><b>B</b> คือการเปลี่ยนแปลงของ log-odds เมื่อตัวแปรเพิ่มขึ้น 1 หน่วย ส่วน <b>Exp(B) = Odds Ratio (OR)</b>: OR &gt; 1 หมายถึง odds ของการเกิดเหตุการณ์เพิ่มขึ้น OR &lt; 1 หมายถึงลดลง และ OR = 1 หมายถึงไม่มีผล ถ้า 95% CI ไม่คร่อมค่า 1 แสดงว่ามีนัยสำคัญ</li>
+    <li><b>Intercept</b> = ${f(R.coefs[0].b,3)} คือ log-odds เมื่อตัวแปรตัวเลขทุกตัวเป็น 0 และตัวแปรหมวดหมู่อยู่ในกลุ่มอ้างอิง</li>
+    </ul><b>การแปลผลรายตัวแปร:</b><ul>${items}</ul></div></section>`;
+
+  // ----- 4 classification -----
+  h+=`<section class="card"><h2><span class="num">D</span> ผลการจำแนกกลุ่ม (Classification)</h2>
+    <div class="slider-row"><b>เกณฑ์ตัดสิน (Cutoff):</b> <input type="range" id="cut" min="0.01" max="0.99" step="0.01" value="0.5"> <b id="cutVal">0.50</b>
+    <button class="btn sec small" id="cutYouden">ใช้ค่า Youden (${f(R.youden.thr,3)})</button><button class="btn sec small" id="cut50">กลับไป 0.50</button></div>
+    <div id="clsBox"></div></section>`;
+
+  // ----- 5 ROC -----
+  h+=`<section class="card"><h2><span class="num">E</span> ความสามารถในการจำแนก (ROC / AUC)</h2>`;
+  h+=tbl(['สถิติ','ค่า'],[
+    ['AUC (Area Under ROC Curve)',f(R.auc,4)],['S.E. (Hanley & McNeil)',f(R.aucSE,4)],['95% CI ของ AUC',`[${f(R.aucCI[0],3)}, ${f(R.aucCI[1],3)}]`],
+    ['ทดสอบ H₀: AUC = 0.5',`z = ${f(R.aucZ,3)}, p ${fp(R.aucP)}`],['Gini coefficient (2·AUC − 1)',f(R.gini,4)],
+    ['KS statistic / Youden J (max[TPR − FPR])',f(R.ks,4)],['Cutoff ที่เหมาะสมตาม Youden',f(R.youden.thr,4)+` (Sens = ${f(R.youden.tpr,3)}, Spec = ${f(1-R.youden.fpr,3)})`],
+    ['Average Precision (พื้นที่ใต้ PR curve)',f(R.ap,4)]]);
+  h+=`<div class="explain"><b>📖 คำอธิบายผล</b><ul>
+    <li><b>AUC = ${f(R.auc,3)}</b> หมายถึงถ้าสุ่มหยิบกรณีที่เกิดเหตุการณ์ 1 ราย และไม่เกิด 1 ราย โมเดลจะให้ความน่าจะเป็นแก่รายที่เกิดสูงกว่าด้วยโอกาสประมาณ ${f(R.auc*100,1)}% — อยู่ในระดับ <b>${aucLevel(R.auc)}</b> (เกณฑ์: 0.5 = เดา, 0.7–0.8 ยอมรับได้, 0.8–0.9 ดีมาก, ≥ 0.9 ดีเยี่ยม) และ ${R.aucP<0.05?'ดีกว่าการเดาอย่างมีนัยสำคัญทางสถิติ':'ยังไม่ดีกว่าการเดาอย่างมีนัยสำคัญ'} (p ${pTxt(R.aucP)})</li>
+    <li><b>Cutoff แบบ Youden</b> ${f(R.youden.thr,3)} คือจุดที่ผลรวม Sensitivity + Specificity สูงสุด เหมาะเมื่อให้น้ำหนักความผิดพลาดสองแบบเท่ากัน</li></ul></div></section>`;
+
+  // ----- 6 diagnostics -----
+  h+=`<section class="card"><h2><span class="num">F</span> การวินิจฉัยโมเดล (Diagnostics)</h2>`;
+  h+=`<h3>Multicollinearity (VIF)</h3>`;
+  let vifHtml='';
+  if(R.vif===null)vifHtml='<p class="muted">มีตัวแปรอิสระเพียง 1 พารามิเตอร์ จึงไม่ต้องตรวจ VIF</p>';
+  else if(R.vif==='singular')vifHtml='<div class="badbox">ไม่สามารถคำนวณ VIF ได้ เนื่องจากตัวแปรมีความสัมพันธ์เชิงเส้นสมบูรณ์</div>';
+  else{vifHtml=tbl(['ตัวแปร','VIF','Tolerance (1/VIF)','ผลการประเมิน'],R.vif.map((v,i)=>[esc(D.cols[i+1].name),f(v,3),f(1/v,3),v>=10?'<span class="pill r">สูงมาก (≥10)</span>':v>=5?'<span class="pill y">ควรระวัง (5–10)</span>':'<span class="pill g">ปกติ (&lt;5)</span>']));}
+  h+=vifHtml;
+  h+=`<h3>Residuals, Leverage และ Influential cases</h3>`;
+  h+=tbl(['เกณฑ์','จำนวนที่เข้าข่าย','ร้อยละ'],[
+    ['|Studentized deviance residual| > 2',R.nOut2,f(R.nOut2/R.n*100,1)+'%'],
+    ['|Studentized deviance residual| > 3 (outlier รุนแรง)',R.nOut3,f(R.nOut3/R.n*100,1)+'%'],
+    [`Leverage > 2k/n = ${f(R.levTh,4)}`,R.nLev,f(R.nLev/R.n*100,1)+'%'],
+    [`Cook's D > 4/n = ${f(R.cookTh,4)}`,R.nCook,f(R.nCook/R.n*100,1)+'%'],
+    [`Cook's D > 1 (มีอิทธิพลสูง)`,R.nCook1,f(R.nCook1/R.n*100,1)+'%']]);
+  const dg=[];
+  dg.push(R.vif&&R.vif!=='singular'?(Math.max(...R.vif)>=10?`<b>VIF</b> สูงสุด = ${f(Math.max(...R.vif),2)} (≥ 10) มีปัญหา multicollinearity ค่า SE ของตัวแปรที่เกี่ยวข้องจะสูงเกินจริง ควรตัดหรือรวมตัวแปรที่สัมพันธ์กัน`:Math.max(...R.vif)>=5?`<b>VIF</b> สูงสุด = ${f(Math.max(...R.vif),2)} (5–10) ควรระวังเล็กน้อย`:`<b>VIF</b> สูงสุด = ${f(Math.max(...R.vif),2)} (&lt; 5) ไม่พบปัญหา multicollinearity`):'<b>VIF</b>: ไม่มีประเด็น/ไม่สามารถคำนวณ');
+  dg.push(`<b>Outlier:</b> มี ${R.nOut2} กรณี (${f(R.nOut2/R.n*100,1)}%) ที่ |residual| &gt; 2 ซึ่งตามทฤษฎีคาดว่าไม่เกินราว 5% ${R.nOut2/R.n<=0.06?'จึงอยู่ในเกณฑ์ปกติ':'ซึ่งสูงกว่าปกติ ควรตรวจสอบข้อมูลเหล่านั้น'}${R.nOut3>0?` และมี ${R.nOut3} กรณีที่เกิน 3 ควรตรวจสอบความถูกต้องของข้อมูล`:''}`);
+  dg.push(`<b>Influential cases:</b> Cook's D สูงสุด = ${f(R.maxCook,4)} (แถวข้อมูลลำดับที่ ${R.maxCookIdx+1} ในชุดข้อมูลที่ใช้วิเคราะห์) ${R.nCook1>0?`มี ${R.nCook1} กรณีที่ Cook's D > 1 ซึ่งมีอิทธิพลต่อโมเดลสูง ควรลองวิเคราะห์ใหม่โดยตัดกรณีเหล่านี้เพื่อดูความเสถียร`:'ไม่มีกรณีใดที่ Cook\'s D เกิน 1 จึงไม่พบกรณีที่มีอิทธิพลสูงผิดปกติ'}`);
+  dg.push('<b>ข้อสมมติของ Logistic regression:</b> ตัวแปรตามเป็น binary, แต่ละกรณีเป็นอิสระต่อกัน, ไม่มี multicollinearity สูง, ความสัมพันธ์ระหว่างตัวแปรต่อเนื่องกับ logit เป็นเชิงเส้น (ดูจาก Partial effect plot) และมีขนาดตัวอย่างเพียงพอ');
+  h+=`<div class="explain"><b>📖 คำอธิบายผล</b><ul>${dg.map(t=>`<li>${t}</li>`).join('')}</ul></div></section>`;
+
+  // ----- charts -----
+  h+=`<section class="card"><h2><span class="num">G</span> กราฟที่เกี่ยวข้อง <span class="muted" style="font-weight:400">(กดปุ่ม "⬇ PNG" มุมขวาบนของแต่ละกราฟเพื่อดาวน์โหลด)</span></h2><div class="chart-grid" id="chartGrid"></div></section>`;
+
+  $('results').innerHTML=h;
+  // overall interpretation
+  const sigTerms=R.termTests.filter(t=>t.p<0.05).map(t=>esc(t.name));
+  const ov=[];
+  ov.push(`โมเดล Logistic regression ${R.pLR<0.05?'<b>มีนัยสำคัญทางสถิติ</b>':'<b>ไม่มีนัยสำคัญทางสถิติ</b>'} (χ²(${R.dfm}) = ${f(R.LR,2)}, p ${pTxt(R.pLR)}) และอธิบายความผันแปรได้ประมาณ ${f(R.nag*100,1)}% (Nagelkerke R²)`);
+  ov.push(sigTerms.length?`ตัวแปรที่มีนัยสำคัญที่ระดับ 0.05 (LR test): <b>${sigTerms.join(', ')}</b>`:'ไม่พบตัวแปรอิสระที่มีนัยสำคัญที่ระดับ 0.05');
+  ov.push(`ความสามารถในการจำแนก AUC = ${f(R.auc,3)} (${aucLevel(R.auc)})`);
+  $('overall').innerHTML=`<div class="explain" style="margin-top:14px"><b>📖 สรุปผลการวิเคราะห์</b><ul>${ov.map(t=>`<li>${t}</li>`).join('')}</ul></div>`;
+
+  buildCharts(D,R);
+  setupClassification(D,R);
+  $('results').scrollIntoView({behavior:'smooth'});
+}
+
+// =====================================================================
+// classification UI
+// =====================================================================
+function setupClassification(D,R){
+  const upd=t=>{
+    $('cutVal').textContent=t.toFixed(2);
+    const c=confusion(R.p,D.y,t),m=clsMetrics(c);
+    $('clsBox').innerHTML=`<div class="row" style="align-items:flex-start;gap:24px">
+      <div style="min-width:280px;flex:1">`+tbl(['','ทำนาย: 0','ทำนาย: 1','รวม'],[
+        ['จริง: 0 ('+esc(D.other)+')',`<b>${c.tn}</b> (TN)`,`${c.fp} (FP)`,c.tn+c.fp],
+        ['จริง: 1 ('+esc(D.evStr)+')',`${c.fn} (FN)`,`<b>${c.tp}</b> (TP)`,c.tp+c.fn],
+        ['รวม',c.tn+c.fn,c.fp+c.tp,m.n]])+`</div>
+      <div style="min-width:300px;flex:1">`+tbl(['ตัวชี้วัด','ค่า'],[
+        ['Accuracy (ความแม่นยำรวม)',f(m.acc*100,2)+'%'],['Sensitivity / Recall (TPR)',f(m.sens*100,2)+'%'],['Specificity (TNR)',f(m.spec*100,2)+'%'],
+        ['Precision / PPV',f(m.ppv*100,2)+'%'],['NPV',f(m.npv*100,2)+'%'],['F1-score',f(m.f1,4)],['Balanced accuracy',f(m.bal*100,2)+'%'],['Matthews correlation (MCC)',f(m.mcc,4)],
+        ['False positive rate',f(m.fpr*100,2)+'%'],['False negative rate',f(m.fnr*100,2)+'%']])+`</div></div>
+      <div class="explain"><b>📖 คำอธิบายผล</b><ul>
+      <li>ที่ Cutoff = ${t.toFixed(2)} โมเดลทำนายถูกต้อง <b>${f(m.acc*100,1)}%</b> (${c.tp+c.tn} จาก ${m.n} ราย)${m.acc<=Math.max(R.n1,R.n0)/R.n?` ซึ่งไม่สูงกว่าการทายกลุ่มใหญ่ตลอด (${f(Math.max(R.n1,R.n0)/R.n*100,1)}%) มากนัก`:''}</li>
+      <li><b>Sensitivity ${f(m.sens*100,1)}%</b> = ในผู้ที่เกิดเหตุการณ์จริง โมเดลตรวจพบได้กี่เปอร์เซ็นต์ / <b>Specificity ${f(m.spec*100,1)}%</b> = ในผู้ที่ไม่เกิด โมเดลทำนายว่าไม่เกินได้ถูกกี่เปอร์เซ็นต์</li>
+      <li><b>Precision ${f(m.ppv*100,1)}%</b> = ในรายที่โมเดลทำนายว่าจะเกิด มีเกิดจริงกี่เปอร์เซ็นต์ / <b>NPV ${f(m.npv*100,1)}%</b> = ในรายที่ทำนายว่าไม่เกิด ไม่เกิดจริงกี่เปอร์เซ็นต์</li>
+      <li>ลด Cutoff → จับผู้เกิดเหตุการณ์ได้มากขึ้น (Sensitivity ↑) แต่เตือนผิดมากขึ้น (Specificity ↓) และเพิ่ม Cutoff จะเกิดผลตรงข้าม ควรเลือกตามต้นทุนของความผิดพลาดแต่ละแบบ</li></ul></div>`;
+    if(S.cm)S.cm.redraw(t);
+    if($('tileAcc'))$('tileAcc').textContent=f(clsMetrics(confusion(R.p,D.y,0.5)).acc*100,1)+'%';
+  };
+  const sl=$('cut');sl.oninput=()=>upd(+sl.value);
+  $('cutYouden').onclick=()=>{const t=Math.min(0.99,Math.max(0.01,R.youden.thr));sl.value=t;upd(t);};
+  $('cut50').onclick=()=>{sl.value=0.5;upd(0.5);};
+  upd(0.5);
+}
+
+// =====================================================================
+// charts
+// =====================================================================
+const whiteBg={id:'whiteBg',beforeDraw(c){const x=c.ctx;x.save();x.globalCompositeOperation='destination-over';x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.restore();}};
+function downloadCanvas(cv,name){const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download=name+'.png';document.body.appendChild(a);a.click();a.remove();}
+function chartCard(title,desc,config,fname,height){
+  const card=document.createElement('div');card.className='chart-card';
+  card.innerHTML=`<div class="chart-head"><h4>${title}</h4><button class="btn small">⬇ PNG</button></div><div class="chart-box" ${height?`style="height:${height}px"`:''}><canvas></canvas></div><p class="chart-desc">${desc}</p>`;
+  $('chartGrid').appendChild(card);const cv=card.querySelector('canvas');
+  config.plugins=(config.plugins||[]).concat([whiteBg]);
+  const ch=new Chart(cv,config);S.charts.push(ch);
+  card.querySelector('button').onclick=()=>downloadCanvas(cv,fname);return ch;}
+function opts(xt,yt,o={}){
+  return {responsive:true,maintainAspectRatio:false,devicePixelRatio:2,animation:false,
+    plugins:{legend:{display:o.legend!==false,position:'bottom'},title:{display:true,text:o.title||'',font:{size:15}}},
+    scales:{x:{type:o.xtype||'linear',min:o.xmin,max:o.xmax,title:{display:true,text:xt},grid:{color:'#eef0f4'}},
+            y:{type:o.ytype||'linear',min:o.ymin,max:o.ymax,title:{display:true,text:yt},grid:{color:'#eef0f4'}}}};}
+const line=(label,data,color,o={})=>({label,data,showLine:true,borderColor:color,backgroundColor:color,pointRadius:0,borderWidth:o.w||2.5,borderDash:o.dash||[],tension:0,fill:false});
+
+function drawCM(cv,c,t,D){
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';ctx.fillStyle='#111827';ctx.font='bold 26px "Noto Sans Thai",sans-serif';ctx.fillText(`Confusion Matrix (cutoff = ${t.toFixed(2)})`,W/2,42);
+  const left=200,top=130,cw=(W-left-40)/2,ch=(H-top-50)/2;const n=c.tp+c.fp+c.tn+c.fn;const mx=Math.max(c.tn,c.fp,c.fn,c.tp)||1;
+  const cells=[[c.tn,c.fp,'TN','FP'],[c.fn,c.tp,'FN','TP']];
+  ctx.font='600 22px "Noto Sans Thai",sans-serif';ctx.fillStyle='#374151';
+  ctx.fillText(`Predicted: ${D.other}`.slice(0,28),left+cw/2,top-20);ctx.fillText(`Predicted: ${D.evStr}`.slice(0,28),left+cw*1.5,top-20);
+  ctx.textAlign='right';ctx.fillText(`Actual: ${D.other}`.slice(0,16),left-14,top+ch/2+8);ctx.fillText(`Actual: ${D.evStr}`.slice(0,16),left-14,top+ch*1.5+8);
+  ctx.textAlign='center';
+  for(let r=0;r<2;r++)for(let q=0;q<2;q++){const v=cells[r][q];const a=0.12+0.78*v/mx;
+    ctx.fillStyle=r===q?`rgba(16,185,129,${a})`:`rgba(239,68,68,${a})`;ctx.fillRect(left+q*cw+3,top+r*ch+3,cw-6,ch-6);
+    ctx.fillStyle='#111827';ctx.font='bold 44px "Noto Sans Thai",sans-serif';ctx.fillText(String(v),left+q*cw+cw/2,top+r*ch+ch/2+6);
+    ctx.font='20px "Noto Sans Thai",sans-serif';ctx.fillText(`${cells[r][2+q]}  (${(v/n*100).toFixed(1)}%)`,left+q*cw+cw/2,top+r*ch+ch/2+40);}
+}
+
+function buildCharts(D,R){
+  const {y}=D;const n=R.n,p=R.p;const evL=`${D.dvName}=${D.evStr}`;
+  // 1 class distribution
+  chartCard('การกระจายของตัวแปรตาม (Y)',`จำนวนข้อมูลแต่ละกลุ่ม: ใช้ดูความสมดุลของกลุ่ม ถ้ากลุ่มหนึ่งน้อยมาก (เหตุการณ์หายาก) โมเดลอาจทำนายกลุ่มนั้นได้ยาก ควรดู Sensitivity และ PR curve ประกอบ (ตอนนี้ Y=1 คิดเป็น ${f(R.n1/n*100,1)}%)`,
+    {type:'bar',data:{labels:[`Y=0 (${D.other})`,`Y=1 (${D.evStr})`],datasets:[{label:'จำนวน',data:[R.n0,R.n1],backgroundColor:[C.blue,C.red]}]},
+     options:{...opts('กลุ่ม','จำนวน',{legend:false,title:'Distribution of Dependent Variable'}),scales:{x:{type:'category',title:{display:true,text:'กลุ่ม'}},y:{title:{display:true,text:'จำนวน'},beginAtZero:true}}}},'class_distribution',320);
+
+  // 2 ROC
+  chartCard('ROC Curve',`แกนตั้งคือ Sensitivity แกนนอนคือ 1−Specificity เส้นยิ่งโค้งเข้าหามุมซ้ายบนยิ่งดี เส้นประคือการเดาสุ่ม (AUC = 0.5) จุดสีแดงคือ Cutoff แบบ Youden พื้นที่ใต้กราฟ AUC = ${f(R.auc,3)} (${aucLevel(R.auc)})`,
+    {type:'scatter',data:{datasets:[line(`ROC (AUC = ${f(R.auc,3)})`,thin(R.roc,600).map(r=>({x:r.fpr,y:r.tpr})),C.pri),
+      line('Random (AUC = 0.5)',[{x:0,y:0},{x:1,y:1}],C.gray,{dash:[6,6],w:1.5}),
+      {label:`Youden cutoff = ${f(R.youden.thr,3)}`,data:[{x:R.youden.fpr,y:R.youden.tpr}],pointRadius:7,backgroundColor:C.red,borderColor:C.red}]},
+     options:opts('1 − Specificity (False Positive Rate)','Sensitivity (True Positive Rate)',{xmin:0,xmax:1,ymin:0,ymax:1,title:`ROC Curve (AUC = ${f(R.auc,3)})`})},'roc_curve');
+
+  // 3 PR
+  chartCard('Precision–Recall Curve',`แสดงความสัมพันธ์ระหว่าง Precision กับ Recall เมื่อเปลี่ยน Cutoff เหมาะเมื่อกลุ่มไม่สมดุล เส้นประคือค่าพื้นฐาน (สัดส่วนเหตุการณ์ = ${f(R.n1/n,3)}) เส้นที่อยู่เหนือเส้นประมากแสดงว่าโมเดลดี Average Precision = ${f(R.ap,3)}`,
+    {type:'scatter',data:{datasets:[line(`PR (AP = ${f(R.ap,3)})`,thin(R.pr,600).map(r=>({x:r.rec,y:r.prec})),C.green),
+      line('Baseline',[{x:0,y:R.n1/n},{x:1,y:R.n1/n}],C.gray,{dash:[6,6],w:1.5})]},
+     options:opts('Recall (Sensitivity)','Precision',{xmin:0,xmax:1,ymin:0,ymax:1.02,title:'Precision-Recall Curve'})},'precision_recall_curve');
+
+  // 4 threshold metrics
+  const ths=[],sensA=[],specA=[],accA=[],f1A=[];
+  for(let t=0;t<=1.0001;t+=0.01){const m=clsMetrics(confusion(p,y,t));ths.push(t);sensA.push({x:t,y:m.sens});specA.push({x:t,y:m.spec});accA.push({x:t,y:m.acc});f1A.push({x:t,y:isNaN(m.f1)?0:m.f1});}
+  chartCard('Sensitivity / Specificity / Accuracy ตาม Cutoff',`แสดงว่าค่าชี้วัดเปลี่ยนไปอย่างไรเมื่อปรับ Cutoff จุดที่เส้น Sensitivity และ Specificity ตัดกันคือจุดที่สมดุลระหว่างสองค่า ใช้เลือก Cutoff ที่เหมาะสมกับงาน (จุดแดง = Youden cutoff ${f(R.youden.thr,3)})`,
+    {type:'scatter',data:{datasets:[line('Sensitivity',sensA,C.red),line('Specificity',specA,C.blue),line('Accuracy',accA,C.green),line('F1-score',f1A,C.amber,{dash:[5,4],w:2}),
+      {label:'Youden cutoff',data:[{x:R.youden.thr,y:R.youden.tpr},{x:R.youden.thr,y:1-R.youden.fpr}],pointRadius:6,backgroundColor:C.dark,borderColor:C.dark}]},
+     options:opts('Cutoff (probability threshold)','ค่าชี้วัด',{xmin:0,xmax:1,ymin:0,ymax:1.02,title:'Threshold Analysis'})},'threshold_metrics');
+
+  // 5 probability histogram
+  const B=20,c0=new Array(B).fill(0),c1=new Array(B).fill(0);
+  p.forEach((v,i)=>{const b=Math.min(B-1,Math.floor(v*B));(y[i]?c1:c0)[b]++;});
+  chartCard('การกระจายความน่าจะเป็นที่ทำนาย แยกตามกลุ่มจริง',`ถ้าโมเดลแยกกลุ่มได้ดี กลุ่ม Y=0 (น้ำเงิน) จะกองอยู่ฝั่งซ้าย และ Y=1 (แดง) จะกองอยู่ฝั่งขวา ยิ่งสองกลุ่มซ้อนทับกันน้อยยิ่งแยกกลุ่มได้ดี`,
+    {type:'bar',data:{labels:c0.map((_,i)=>(i/B).toFixed(2)+'–'+((i+1)/B).toFixed(2)),datasets:[{label:`Y=0 (${D.other})`,data:c0,backgroundColor:'rgba(59,130,246,.7)'},{label:`Y=1 (${D.evStr})`,data:c1,backgroundColor:'rgba(239,68,68,.7)'}]},
+     options:{...opts('ความน่าจะเป็นที่ทำนาย (Predicted probability)','จำนวน',{title:'Predicted Probability by Actual Class'}),scales:{x:{type:'category',title:{display:true,text:'Predicted probability'},ticks:{maxRotation:60,font:{size:9}}},y:{title:{display:true,text:'จำนวน'},beginAtZero:true}}}},'predicted_probability_hist');
+
+  // 6 calibration
+  chartCard('Calibration Plot (กราฟสอบเทียบ)',`เปรียบเทียบความน่าจะเป็นที่โมเดลทำนาย (แกนนอน) กับสัดส่วนที่เกิดเหตุการณ์จริง (แกนตั้ง) ในแต่ละกลุ่มแบบ Hosmer-Lemeshow จุดที่อยู่ใกล้เส้นทแยงมุมแสดงว่าโมเดลทำนายความน่าจะเป็นได้ตรงกับความเป็นจริง (HL p ${R.hl.p===R.hl.p?pTxt(R.hl.p):'–'})`,
+    {type:'scatter',data:{datasets:[line('Perfect calibration',[{x:0,y:0},{x:1,y:1}],C.gray,{dash:[6,6],w:1.5}),
+      {label:'โมเดล (แต่ละกลุ่ม)',data:R.hlGroups.map(g=>({x:g.meanP,y:g.obsRate})),showLine:true,borderColor:C.pri,backgroundColor:C.pri,pointRadius:5,borderWidth:2}]},
+     options:opts('Mean predicted probability','Observed proportion',{xmin:0,xmax:1,ymin:0,ymax:1,title:'Calibration Plot'})},'calibration_plot');
+
+  // 7 HL observed vs expected
+  chartCard('Hosmer-Lemeshow: จำนวนจริง vs จำนวนที่คาด',`แต่ละแท่งคือ 1 กลุ่ม (เรียงจากความน่าจะเป็นต่ำไปสูง) เปรียบเทียบจำนวนเหตุการณ์ที่เกิดจริง (Observed) กับที่โมเดลคาด (Expected) ถ้าสองแท่งใกล้เคียงกันในทุกกลุ่มแสดงว่าโมเดลสอดคล้องกับข้อมูล`,
+    {type:'bar',data:{labels:R.hlGroups.map((_,i)=>'กลุ่ม '+(i+1)),datasets:[{label:'Observed',data:R.hlGroups.map(g=>g.o),backgroundColor:'rgba(239,68,68,.75)'},{label:'Expected',data:R.hlGroups.map(g=>+g.e.toFixed(2)),backgroundColor:'rgba(79,70,229,.75)'}]},
+     options:{...opts('กลุ่มตามความน่าจะเป็น','จำนวนเหตุการณ์ (Y=1)',{title:'Observed vs Expected Events'}),scales:{x:{type:'category',title:{display:true,text:'Risk group'}},y:{title:{display:true,text:'จำนวนเหตุการณ์'},beginAtZero:true}}}},'hosmer_lemeshow_obs_exp');
+
+  // 8 forest
+  const tr=R.coefs.slice(1);const m=tr.length;const names=tr.map(c=>c.name);
+  const los=tr.map(c=>c.lo).filter(v=>v>0&&isFinite(v)),his=tr.map(c=>c.hi).filter(v=>isFinite(v));
+  const mn=Math.min(1,...(los.length?los:[0.1])),mxv=Math.max(1,...(his.length?his:[10]));
+  const xmin=Math.pow(10,Math.floor(Math.log10(mn))),xmax=Math.pow(10,Math.ceil(Math.log10(mxv)));
+  const errPlugin={id:'errbars',afterDatasetsDraw(chart){const ds=chart.data.datasets[0];if(!ds.errs)return;const {ctx,scales:{x,y}}=chart;ctx.save();
+    ds.errs.forEach((e,i)=>{const yy=y.getPixelForValue(ds.data[i].y);const x1=x.getPixelForValue(Math.max(e[0],x.min)),x2=x.getPixelForValue(Math.min(e[1],x.max));
+      ctx.strokeStyle=(e[0]>1||e[1]<1)?'#4f46e5':'#9ca3af';ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(x1,yy);ctx.lineTo(x2,yy);ctx.moveTo(x1,yy-6);ctx.lineTo(x1,yy+6);ctx.moveTo(x2,yy-6);ctx.lineTo(x2,yy+6);ctx.stroke();});ctx.restore();}};
+  const fo2=opts('Odds Ratio (log scale) พร้อม 95% CI','',{xtype:'logarithmic',xmin,xmax,ymin:0.5,ymax:m+0.5,title:'Forest Plot of Odds Ratios',legend:false});
+  fo2.scales.y.ticks={stepSize:1,callback:v=>Number.isInteger(v)&&names[m-v]?names[m-v]:''};fo2.scales.y.grid={display:false};fo2.scales.y.title={display:false};
+  chartCard('Forest Plot ของ Odds Ratio',`จุดคือ OR และเส้นคือช่วงความเชื่อมั่น 95% เส้นประแนวตั้งที่ OR = 1 คือไม่มีผล ตัวแปรที่เส้นไม่คร่อมค่า 1 (สีม่วง) มีนัยสำคัญ ทางขวาของ 1 = เพิ่ม odds ทางซ้าย = ลด odds`,
+    {type:'scatter',data:{datasets:[{label:'OR',data:tr.map((c,i)=>({x:Math.min(Math.max(c.or,xmin),xmax),y:m-i})),errs:tr.map(c=>[c.lo,c.hi]),backgroundColor:C.dark,pointRadius:5,pointStyle:'rect'},
+      line('OR = 1',[{x:1,y:0.5},{x:1,y:m+0.5}],C.red,{dash:[6,5],w:1.5})]},options:fo2,plugins:[errPlugin]},'forest_plot_odds_ratio',Math.max(330,110+42*m));
+
+  // 9 sigmoid
+  const [e0,e1]=minmax(R.eta);const sg=[];for(let i=0;i<=120;i++){const e=e0+(e1-e0)*i/120;sg.push({x:e,y:sig(e)});}
+  const jit=i=>((i*7919)%100)/100*0.06-0.03;const pts0=[],pts1=[];R.eta.forEach((e,i)=>{(y[i]?pts1:pts0).push({x:e,y:y[i]+jit(i)});});
+  chartCard('Logistic (Sigmoid) Curve',`เส้นโค้งรูปตัว S แสดงการแปลงค่า logit (ผลรวมเชิงเส้นของตัวแปร) เป็นความน่าจะเป็น จุดคือข้อมูลจริง (เลื่อนเล็กน้อยเพื่อไม่ให้ซ้อนกัน) ถ้ากลุ่มสีแดงอยู่ทางขวาและสีน้ำเงินอยู่ทางซ้ายชัดเจน แสดงว่าโมเดลแยกกลุ่มได้ดี`,
+    {type:'scatter',data:{datasets:[{label:`Y=0 (${D.other})`,data:pts0,backgroundColor:'rgba(59,130,246,.45)',pointRadius:3},{label:`Y=1 (${D.evStr})`,data:pts1,backgroundColor:'rgba(239,68,68,.45)',pointRadius:3},line('P = 1/(1+e^−logit)',sg,C.dark,{w:2.5})]},
+     options:opts('Linear predictor (logit)','Probability',{ymin:-0.1,ymax:1.1,title:'Sigmoid Curve'})},'sigmoid_curve');
+
+  // 10 confusion matrix canvas
+  {const card=document.createElement('div');card.className='chart-card';
+   card.innerHTML=`<div class="chart-head"><h4>Confusion Matrix</h4><button class="btn small">⬇ PNG</button></div><canvas class="cm" width="900" height="640"></canvas><p class="chart-desc">ตารางเปรียบเทียบค่าจริงกับค่าที่ทำนาย สีเขียว = ทำนายถูก (TN, TP) สีแดง = ทำนายผิด (FP, FN) ความเข้มสีตามจำนวน ปรับ Cutoff ได้ที่แถบเลื่อนในส่วน D กราฟนี้จะอัปเดตตาม</p>`;
+   $('chartGrid').appendChild(card);const cv=card.querySelector('canvas');
+   S.cm={redraw:t=>drawCM(cv,confusion(p,y,t),t,D)};S.cm.redraw(+$('cut').value);card.querySelector('button').onclick=()=>downloadCanvas(cv,'confusion_matrix');}
+
+  // 11 gains
+  const idx=R.sortDesc;let cum=0;const gain=[{x:0,y:0}];idx.forEach((i,k)=>{cum+=y[i];gain.push({x:(k+1)/n,y:cum/R.n1});});
+  chartCard('Cumulative Gains Chart',`เรียงข้อมูลจากความน่าจะเป็นสูงไปต่ำ แล้วดูว่าถ้าเลือกกลุ่มบนสุด X% ของประชากร จะจับผู้เกิดเหตุการณ์ได้กี่ % เส้นที่อยู่เหนือเส้นทแยงมาก (ใกล้เส้น Perfect model) แสดงว่าโมเดลมีประโยชน์ในการจัดลำดับความเสี่ยง`,
+    {type:'scatter',data:{datasets:[line('โมเดล',thin(gain,500),C.pri),line('Random',[{x:0,y:0},{x:1,y:1}],C.gray,{dash:[6,6],w:1.5}),line('Perfect model',[{x:0,y:0},{x:R.n1/n,y:1},{x:1,y:1}],C.green,{dash:[3,3],w:1.5})]},
+     options:opts('สัดส่วนของประชากรที่คัดเลือก (เรียงตามความเสี่ยง)','สัดส่วนของเหตุการณ์ที่จับได้',{xmin:0,xmax:1,ymin:0,ymax:1.02,title:'Cumulative Gains'})},'cumulative_gains');
+
+  // 12 lift by decile
+  const dec=10;const lift=[];for(let d=0;d<dec;d++){const s=Math.floor(d*n/dec),e=Math.floor((d+1)*n/dec);let ev=0;for(let i=s;i<e;i++)ev+=y[idx[i]];lift.push((ev/(e-s))/(R.n1/n));}
+  chartCard('Lift Chart (แยกตามเดไซล์)',`แบ่งข้อมูลเป็น 10 กลุ่มตามความน่าจะเป็น (เดไซล์ 1 = เสี่ยงสูงสุด) ค่า Lift = อัตราเหตุการณ์ในกลุ่ม ÷ อัตราเฉลี่ยทั้งหมด เช่น Lift ของเดไซล์ 1 = ${f(lift[0],2)} หมายถึงกลุ่มนี้เกิดเหตุการณ์สูงกว่าค่าเฉลี่ย ${f(lift[0],2)} เท่า เส้นแดงคือ Lift = 1 (เท่ากับสุ่ม)`,
+    {type:'bar',data:{labels:lift.map((_,i)=>'D'+(i+1)),datasets:[{type:'bar',label:'Lift',data:lift.map(v=>+v.toFixed(3)),backgroundColor:'rgba(79,70,229,.8)'},{type:'line',label:'Baseline = 1',data:lift.map(()=>1),borderColor:C.red,borderDash:[6,5],pointRadius:0,borderWidth:2}]},
+     options:{...opts('เดไซล์ความเสี่ยง','Lift',{title:'Lift by Decile'}),scales:{x:{type:'category',title:{display:true,text:'Decile (1 = ความน่าจะเป็นสูงสุด)'}},y:{title:{display:true,text:'Lift'},beginAtZero:true}}}},'lift_chart');
+
+  // 13 KS
+  const asc=[...idx].reverse();let c0n=0,c1n=0;const kn=[{x:0,y:0}],kp=[{x:0,y:0}];
+  asc.forEach((i,k)=>{if(y[i])c1n++;else c0n++;if(k===n-1||p[asc[k+1]]!==p[i]){kn.push({x:p[i],y:c0n/R.n0});kp.push({x:p[i],y:c1n/R.n1});}});kn.push({x:1,y:1});kp.push({x:1,y:1});
+  chartCard('KS Chart (Kolmogorov–Smirnov)',`เส้นแสดงสัดส่วนสะสมของกลุ่ม Y=0 และ Y=1 ตามความน่าจะเป็นที่ทำนาย ระยะห่างแนวตั้งสูงสุดคือค่า KS = ${f(R.ks,3)} ที่ความน่าจะเป็น ≈ ${f(R.youden.thr,3)} ยิ่งสูงยิ่งแยกสองกลุ่มได้ดี (KS > 0.4 ถือว่าดี)`,
+    {type:'scatter',data:{datasets:[line(`Y=0 (${D.other})`,thin(kn,500),C.blue),line(`Y=1 (${D.evStr})`,thin(kp,500),C.red),
+      line(`KS = ${f(R.ks,3)}`,[{x:R.youden.thr,y:1-R.youden.fpr},{x:R.youden.thr,y:R.youden.fpr}].map((pt,i)=>({x:pt.x,y:i?R.youden.fpr:R.youden.tpr})),C.dark,{dash:[4,4],w:2})]},
+     options:opts('Predicted probability','Cumulative proportion',{xmin:0,xmax:1,ymin:0,ymax:1.02,title:'KS Chart'})},'ks_chart');
+
+  // 14 deviance residuals vs predicted
+  const rp0=[],rp1=[];p.forEach((v,i)=>{(y[i]?rp1:rp0).push({x:v,y:R.stdD[i]});});
+  chartCard('Studentized Deviance Residuals vs Predicted Probability',`ใช้ตรวจหาข้อมูลที่โมเดลทำนายได้ไม่ดี จุดที่อยู่นอกเส้นประ ±2 คือ outlier ที่ควรตรวจสอบ (±3 คือรุนแรง) เนื่องจากตัวแปรตามเป็น 0/1 กราฟจึงแยกเป็นสองกลุ่ม (บน = Y=1, ล่าง = Y=0) เป็นเรื่องปกติ ไม่ควรเห็นแนวโน้มเป็นรูปโค้งหรือรูปกรวย`,
+    {type:'scatter',data:{datasets:[{label:'Y=0',data:rp0,backgroundColor:'rgba(59,130,246,.55)',pointRadius:3},{label:'Y=1',data:rp1,backgroundColor:'rgba(239,68,68,.55)',pointRadius:3},
+      line('+2',[{x:0,y:2},{x:1,y:2}],C.amber,{dash:[6,5],w:1.5}),line('−2',[{x:0,y:-2},{x:1,y:-2}],C.amber,{dash:[6,5],w:1.5}),line('0',[{x:0,y:0},{x:1,y:0}],C.gray,{w:1})]},
+     options:opts('Predicted probability','Studentized deviance residual',{xmin:0,xmax:1,title:'Deviance Residuals'})},'deviance_residuals');
+
+  // 15 Pearson residuals index
+  chartCard('Standardized Pearson Residuals (ตามลำดับข้อมูล)',`แสดง Pearson residual ที่ปรับด้วย leverage ของแต่ละแถว ตามลำดับในชุดข้อมูล ใช้มองหา outlier และรูปแบบผิดปกติ (เช่น ค่าสูงเป็นช่วง ๆ ซึ่งอาจเกี่ยวกับลำดับเวลา) เส้นประ ±2 และ ±3 คือเกณฑ์สังเกต`,
+    {type:'scatter',data:{datasets:[{label:'Std. Pearson residual',data:R.stdP.map((v,i)=>({x:i+1,y:v})),backgroundColor:R.stdP.map(v=>Math.abs(v)>3?'rgba(239,68,68,.9)':Math.abs(v)>2?'rgba(245,158,11,.8)':'rgba(79,70,229,.5)'),pointRadius:3},
+      line('+2',[{x:1,y:2},{x:n,y:2}],C.amber,{dash:[6,5],w:1.5}),line('−2',[{x:1,y:-2},{x:n,y:-2}],C.amber,{dash:[6,5],w:1.5}),line('+3',[{x:1,y:3},{x:n,y:3}],C.red,{dash:[3,3],w:1}),line('−3',[{x:1,y:-3},{x:n,y:-3}],C.red,{dash:[3,3],w:1})]},
+     options:opts('ลำดับข้อมูล (Observation)','Standardized Pearson residual',{title:'Pearson Residuals Index Plot',legend:false})},'pearson_residuals_index');
+
+  // 16 Cook's
+  chartCard("Cook's Distance",`วัดอิทธิพลของแต่ละแถวต่อค่าสัมประสิทธิ์ ยิ่งสูงยิ่งมีอิทธิพลมาก เส้นประแดงคือเกณฑ์ 4/n = ${f(R.cookTh,4)} แท่งสีแดงคือกรณีที่เกินเกณฑ์ (${R.nCook} กรณี) ควรตรวจสอบว่าเป็นข้อมูลผิดพลาดหรือไม่`,
+    {type:'bar',data:{labels:R.cook.map((_,i)=>i+1),datasets:[{type:'bar',label:"Cook's D",data:R.cook,backgroundColor:R.cook.map(v=>v>R.cookTh?'rgba(239,68,68,.85)':'rgba(79,70,229,.6)'),barPercentage:1,categoryPercentage:1},
+      {type:'line',label:'4/n',data:R.cook.map(()=>R.cookTh),borderColor:C.red,borderDash:[6,5],pointRadius:0,borderWidth:1.5}]},
+     options:{...opts('ลำดับข้อมูล (Observation)',"Cook's D",{title:"Cook's Distance",legend:false}),scales:{x:{type:'category',title:{display:true,text:'Observation'},ticks:{maxTicksLimit:15}},y:{title:{display:true,text:"Cook's D"},beginAtZero:true}}}},'cooks_distance');
+
+  // 17 leverage vs residual
+  chartCard('Leverage vs Standardized Residuals',`จุดที่อยู่ขวาสุด (leverage สูง) คือข้อมูลที่ค่าตัวแปรอิสระผิดปกติ ส่วนจุดที่อยู่สูง/ต่ำ (residual สูง) คือข้อมูลที่โมเดลทำนายพลาด จุดที่ทั้ง leverage สูงและ residual สูง (มุมขวาบน/ขวาล่าง) มีอิทธิพลต่อโมเดลมากที่สุด เส้นตั้งคือ 2k/n = ${f(R.levTh,3)}`,
+    {type:'scatter',data:{datasets:[{label:'Observations',data:R.fit.h.map((h,i)=>({x:h,y:R.stdP[i]})),backgroundColor:R.fit.h.map((h,i)=>(h>R.levTh&&Math.abs(R.stdP[i])>2)?'rgba(239,68,68,.9)':'rgba(79,70,229,.5)'),pointRadius:3},
+      line('Leverage threshold',[{x:R.levTh,y:-5},{x:R.levTh,y:5}],C.amber,{dash:[6,5],w:1.5}),line('+2',[{x:0,y:2},{x:Math.max(...R.fit.h)*1.05,y:2}],C.gray,{dash:[4,4],w:1}),line('−2',[{x:0,y:-2},{x:Math.max(...R.fit.h)*1.05,y:-2}],C.gray,{dash:[4,4],w:1})]},
+     options:opts('Leverage (hat value)','Standardized Pearson residual',{xmin:0,title:'Leverage vs Residuals',legend:false})},'leverage_vs_residuals');
+
+  // 18 partial effects
+  D.terms.forEach(t=>{
+    const base=D.means;const b=R.fit.b,cov=R.fit.cov;
+    const calc=row=>{const e=row.reduce((a,v,j)=>a+v*b[j],0);let q=0;for(let a=0;a<row.length;a++){let s=0;for(let c=0;c<row.length;c++)s+=cov[a][c]*row[c];q+=row[a]*s;}const se=Math.sqrt(Math.max(q,0));return {p:sig(e),lo:sig(e-1.959964*se),hi:sig(e+1.959964*se)};};
+    if(t.kind==='num'){const j=t.idx[0];const G=60;const mid=[],lo=[],hi=[];
+      for(let i=0;i<=G;i++){const v=t.min+(t.max-t.min)*i/G;const row=base.slice();row[j]=v;const r=calc(row);mid.push({x:v,y:r.p});lo.push({x:v,y:r.lo});hi.push({x:v,y:r.hi});}
+      const ci=R.coefs[j];
+      chartCard(`Partial Effect: ${esc(t.name)}`,`ความน่าจะเป็นของ ${esc(evL)} ที่เปลี่ยนไปตาม <b>${esc(t.name)}</b> เมื่อกำหนดตัวแปรอื่นให้เท่าค่าเฉลี่ย พื้นที่สีจางคือช่วงความเชื่อมั่น 95% ถ้าเส้นชันแสดงว่าตัวแปรนี้มีผลมาก (OR = ${fo(ci.or)} ต่อ 1 หน่วย) ใช้ดูรูปร่างความสัมพันธ์ด้วย`,
+        {type:'scatter',data:{datasets:[{label:'95% CI (ล่าง)',data:lo,showLine:true,borderColor:'rgba(79,70,229,0)',backgroundColor:'rgba(79,70,229,0)',pointRadius:0,fill:false},
+          {label:'95% CI',data:hi,showLine:true,borderColor:'rgba(79,70,229,0)',backgroundColor:'rgba(79,70,229,.15)',pointRadius:0,fill:'-1'},
+          line('P(Y=1)',mid,C.pri)]},options:opts(t.name,`P(${evL})`,{ymin:0,ymax:1,title:`Partial Effect of ${t.name}`})},'partial_effect_'+t.name.replace(/[^\w\u0E00-\u0E7F]+/g,'_'));
+    }else{
+      const vals=[],labs=[];t.levels.forEach(L=>{const row=base.slice();t.idx.forEach(j=>row[j]=0);if(L!==t.ref){const j=t.idx.find(j=>D.cols[j].level===L);row[j]=1;}const r=calc(row);vals.push(+r.p.toFixed(4));labs.push(L+(L===t.ref?' (ref)':''));});
+      chartCard(`Predicted Probability by ${esc(t.name)}`,`ความน่าจะเป็นที่ทำนายของ ${esc(evL)} ในแต่ละระดับของ <b>${esc(t.name)}</b> เมื่อกำหนดตัวแปรอื่นให้เท่าค่าเฉลี่ย ใช้เปรียบเทียบผลของแต่ละกลุ่มกับกลุ่มอ้างอิง (ref)`,
+        {type:'bar',data:{labels:labs,datasets:[{label:'Predicted P',data:vals,backgroundColor:labs.map(l=>/\(ref\)$/.test(l)?'rgba(156,163,175,.8)':'rgba(79,70,229,.75)')}]},
+         options:{...opts(t.name,'Predicted probability',{title:`P(${evL}) by ${t.name}`,legend:false}),scales:{x:{type:'category',title:{display:true,text:t.name}},y:{min:0,max:1,title:{display:true,text:'Predicted probability'}}}}},'predicted_prob_'+t.name.replace(/[^\w\u0E00-\u0E7F]+/g,'_'));
+    }});
+}
+
+// =====================================================================
+// run
+// =====================================================================
+$('run').addEventListener('click',()=>{
+  if(!S.rows.length){showMsg('กรุณาอัปโหลดไฟล์ข้อมูลก่อน');return;}
+  const btn=$('run');btn.disabled=true;btn.innerHTML='<span class="spin"></span>กำลังประมวลผล...';$('msg').innerHTML='';
+  setTimeout(()=>{
+    try{destroyCharts();$('results').innerHTML='';const cfg=readConfig();const D=buildData(cfg);const R=compute(D);render(D,R);}
+    catch(err){console.error(err);showMsg('❌ '+err.message);}
+    finally{btn.disabled=false;btn.innerHTML='▶ ประมวลผล';}
+  },40);
+});
+</script>
+</body>
+</html>
